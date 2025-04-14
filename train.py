@@ -6,7 +6,7 @@ from tensorflow.keras import layers, models
 import json
 
 # Путь к данным (папка Training содержит подпапки с фруктами)
-dataset_path = 'fruits-360_100x100/fruits-360/Training'
+dataset_path = 'Training/'
 
 # Загрузка данных с аугментацией
 train_data = tf.keras.preprocessing.image_dataset_from_directory(
@@ -57,7 +57,7 @@ model = models.Sequential([
     base_model,
     layers.GlobalAveragePooling2D(),  # Уменьшение размерности
     layers.Dense(256, activation='relu'),  # Полносвязный слой
-    layers.Dropout(0.5),  # Регуляризация (борьба с переобучением)
+   # layers.Dropout(0.5),  # Регуляризация (борьба с переобучением)
     layers.Dense(num_classes, activation='softmax')  # Выходной слой (вероятности классов)
 ])
 
@@ -71,7 +71,7 @@ model.compile(
 # Обучение
 model.fit(
     train_data,
-    epochs=20,  # Увеличено количество эпох
+    epochs=10,  # Увеличено количество эпох
     validation_data=val_data,
     callbacks=[
         tf.keras.callbacks.EarlyStopping(patience=3)  # Остановка при переобучении
@@ -82,9 +82,9 @@ model.fit(
 model.save('fruit_model.h5')
 
 # Конвертация в TensorFlow Lite (для Raspberry Pi)
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
-tflite_model = converter.convert()
-with open('fruit_model.tflite', 'wb') as f:
-    f.write(tflite_model)
+#converter = tf.lite.TFLiteConverter.from_keras_model(model)
+#tflite_model = converter.convert()
+#with open('fruit_model.tflite', 'wb') as f:
+#    f.write(tflite_model)
 
 print("Модель обучена и сохранена!")
