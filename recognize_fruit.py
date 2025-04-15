@@ -22,6 +22,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow logging
 img_height, img_width = 100, 100  # Changed to match model input size
 confidence_threshold = 0.8
 min_detection_interval = 0.5
+min_brightness = 30  # Minimum average brightness (0-255)
+min_contrast = 20    # Minimum contrast (0-255)
 
 def check_camera_devices():
     """Check available camera devices"""
@@ -123,8 +125,34 @@ def load_class_names(filename):
         logging.error(f"Error loading class names: {str(e)}")
         raise
 
+def check_image_quality(image):
+    """Check if image meets quality standards"""
+    # Convert to grayscale for brightness/contrast check
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Calculate average brightness
+    brightness = np.mean(gray)
+    
+    # Calculate contrast (standard deviation)
+    contrast = np.std(gray)
+    
+    # Check if image is too dark or has too little contrast
+    if brightness < min_brightness:
+        logging.debug(f"Image too dark: brightness={brightness:.1f}")
+        return False
+    
+    if contrast < min_contrast:
+        logging.debug(f"Image has too little contrast: contrast={contrast:.1f}")
+        return False
+    
+    return True
+
 def preprocess_image(image, target_size=(100, 100)):
     """Preprocess image for model input"""
+    # Check image quality first
+    if not check_image_quality(image):
+        return None
+    
     # Resize image
     image = cv2.resize(image, target_size)
     
@@ -201,6 +229,8 @@ def main():
         
         logging.info("Press Ctrl+C to quit")
         logging.info(f"Using confidence threshold: {confidence_threshold}")
+        logging.info(f"Minimum brightness: {min_brightness}")
+        logging.info(f"Minimum contrast: {min_contrast}")
         
         while True:
             # Read frame from webcam
@@ -213,6 +243,10 @@ def main():
             
             # Preprocess image
             processed_image = preprocess_image(frame, (img_height, img_width))
+            
+            # Skip frame if it doesn't meet quality standards
+            if processed_image is None:
+                continue
             
             # Set input tensor
             interpreter.set_tensor(input_details[0]['index'], processed_image)
